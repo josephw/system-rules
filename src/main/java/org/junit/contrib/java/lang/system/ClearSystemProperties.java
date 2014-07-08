@@ -4,37 +4,44 @@ import org.junit.contrib.java.lang.system.internal.RestoreSpecificSystemProperti
 import org.junit.rules.ExternalResource;
 
 /**
- * The {@code ClearSystemProperties} rule clears a set of system properties.
- * After the test the original values are restored.
- * 
- * Let's assume the system property {@code MyProperty} has the value
- * {@code MyValue}. Now run the test
- * 
+ * The {@code ClearSystemProperties} rule clears a set of system properties and
+ * restores their original values when the test finishes (whether it passes or
+ * fails).
+ * <p>Supposing that the system property {@code YourProperty} has the value
+ * {@code YourValue}. Now run the test
  * <pre>
- *   public void MyTest {
- *     &#064;Rule
- *     public final ClearSystemProperties clearSystemProperties
- *         = new ClearSystemProperties();
- * 
- *     &#064;Test
- *     public void overrideProperty() {
- *       clearSystemProperties.clearProperty("MyProperty");
- *       assertNull(System.getProperty("MyProperty"));
- *       ...
- *     }
+ * public void YourTest {
+ *   &#064;Rule
+ *   public final TestRule clearSystemProperties
+ *     = new ClearSystemProperties("YourProperty");
+ *
+ *   &#064;Test
+ *   public void verifyProperty() {
+ *     assertNull(System.getProperty("YourProperty"));
  *   }
- * </pre>
- * 
- * The test succeeds and after the test, the system property {@code MyProperty}
- * again has the value {@code MyValue}. If you need do restore the same
- * properties for each test then you can provide the properties' names while
- * creating the {@code ClearSystemProperties} rule.
- * 
+ * }</pre>
+ * The test succeeds and afterwards the system property {@code YourProperty}
+ * has the value {@code YourValue} again.
+ * <p>The {@code ClearSystemProperties} rule accepts a list of properties in
+ * case you need to clear multiple properties:
  * <pre>
  * &#064;Rule
- * public final ClearSystemProperties clearSystemProperties = new ClearSystemProperties(
- * 		&quot;MyProperty&quot;, &quot;AnotherProperty&quot;);
+ * public final TestRule clearSystemProperties
+ *   = new ClearSystemProperties(&quot;first&quot;, &quot;second&quot;, &quot;third&quot;);
  * </pre>
+ * <h2>Clear property for a single test</h2>
+ * If you want to clear a property for a single test then you can use the
+ * {@link org.junit.contrib.java.lang.system.RestoreSystemProperties} in
+ * combination with {@link System#clearProperty(String)}.
+ * <pre>
+ * &#064;Rule
+ * public final TestRule restoreSystemProperties = new RestoreSystemProperties();
+ *
+ * &#064;Test
+ * public void test() {
+ *   System.clearProperty("YourProperty");
+ *   ...
+ * }</pre>
  */
 public class ClearSystemProperties extends ExternalResource {
 	private final RestoreSpecificSystemProperties restoreSystemProperty = new RestoreSpecificSystemProperties();
@@ -42,10 +49,10 @@ public class ClearSystemProperties extends ExternalResource {
 
 	/**
 	 * Creates a {@code ClearSystemProperties} rule that clears the specified
-	 * properties and restores them after the test.
-	 * 
-	 * @param properties
-	 *            the properties' names.
+	 * properties and restores their original values when the test finishes
+	 * (whether it passes or fails).
+	 *
+	 * @param properties the properties' names.
 	 */
 	public ClearSystemProperties(String... properties) {
 		this.properties = properties;
@@ -54,10 +61,31 @@ public class ClearSystemProperties extends ExternalResource {
 	/**
 	 * Clears the property and restores the value of the property at the point
 	 * of clearing it.
-	 * 
-	 * @param property
-	 *            the name of the property.
+	 * <p>This method is deprecated. If you're still using it, please replace your current code
+	 * <pre>
+	 * &#064;Rule
+	 * public final TestRule clearSystemProperties = new ClearSystemProperties();
+	 *
+	 * &#064;Test
+	 * public void test() {
+	 *   clearSystemProperties("YourProperty");
+	 * }</pre>
+	 * with this code:
+	 * <pre>
+	 * &#064;Rule
+	 * public final TestRule restoreSystemProperties = new RestoreSystemProperties();
+	 *
+	 * &#064;Test
+	 * public void test() {
+	 *   System.clearProperty("YourProperty");
+	 * }</pre>
+	 *
+	 * @param property the name of the property.
+	 * @since 1.6.0
+	 * @deprecated please use the {@link org.junit.contrib.java.lang.system.RestoreSystemProperties}
+	 * rule in conjunction with {@link System#clearProperty(String)} instead.
 	 */
+	@Deprecated
 	public void clearProperty(String property) {
 		restoreSystemProperty.add(property);
 		System.clearProperty(property);
