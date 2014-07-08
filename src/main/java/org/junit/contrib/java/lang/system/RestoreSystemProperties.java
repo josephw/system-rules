@@ -1,98 +1,74 @@
 package org.junit.contrib.java.lang.system;
 
-import static java.lang.System.clearProperty;
-import static java.lang.System.getProperty;
-import static java.lang.System.setProperty;
-import static java.util.Arrays.asList;
+import static java.lang.System.getProperties;
+import static java.lang.System.setProperties;
 
-import java.util.ArrayList;
-import java.util.Iterator;
-import java.util.List;
+import java.util.Properties;
 
 import org.junit.rules.ExternalResource;
 
 /**
- * The {@code RestoreSystemProperties} rule undoes changes of system properties.
- * 
- * Let's assume the system property {@code MyProperty} has the value
- * {@code MyValue}. Now run the test
- * 
+ * The {@code RestoreSystemProperties} rule undoes changes of system properties
+ * when the test finishes (whether it passes or fails).
+ * <p>Let's assume the system property {@code YourProperty} has the value
+ * {@code YourValue}. Now run the test
  * <pre>
- *   public void MyTest {
+ *   public void YourTest {
  *     &#064;Rule
- *     public final RestoreSystemProperties restoreSystemProperties
- *         = new RestoreSystemProperties();
- * 
+ *     public final TestRule restoreSystemProperties = new RestoreSystemProperties();
+ *
  *     &#064;Test
  *     public void overrideProperty() {
- *       restoreSystemProperties.add("MyProperty");
- *       System.setProperty("MyProperty", "other value");
- *       ...
+ *       System.setProperty("YourProperty", "other value");
+ *       assertEquals("other value", System.getProperty("YourProperty"));
  *     }
- *   }
- * </pre>
- * 
- * After running the test, the system property {@code MyProperty} has the value
- * {@code MyValue} again. If you need do restore the same property for each test
- * then you can provide the property's name while creating the
- * {@code RestoreSystemProperties} rule.
- * 
- * <pre>
- * &#064;Rule
- * public final RestoreSystemProperties restoreSystemProperties = new RestoreSystemProperties(
- * 		&quot;MyProperty&quot;);
- * </pre>
+ *   }</pre>
+ * After running the test, the system property {@code YourProperty} has the value
+ * {@code YourValue} again.
  */
 public class RestoreSystemProperties extends ExternalResource {
-	private final List<String> properties = new ArrayList<String>();
-	private final List<String> originalValues = new ArrayList<String>();
+	private Properties originalProperties;
 
 	/**
-	 * Creates a {@code RestoreSystemProperties} rule that restores the
-	 * specified properties.
-	 * 
-	 * @param properties
-	 *            the properties' names.
+	 * Creates a {@code RestoreSystemProperties} rule that restores all
+	 * system properties.
+	 *
+	 * @deprecated please use {@link #RestoreSystemProperties()}. The
+	 * rule restores all properties. Hence you don't have to specify
+	 * the properties anymore.
 	 */
+	@Deprecated
 	public RestoreSystemProperties(String... properties) {
-		this.properties.addAll(asList(properties));
 	}
 
 	/**
-	 * Add a property that is restored after the test. The
-	 * {@code RestoreSystemProperties} restores the value of the property at the
-	 * point of adding it.
-	 * 
-	 * @param property
-	 *            the name of the property.
-	 * @since 1.6.0
+	 * Creates a {@code RestoreSystemProperties} rule that restores all
+	 * system properties.
+	 *
+	 * @since 1.7.0
 	 */
+	public RestoreSystemProperties() {
+	}
+
+	/**
+	 * Does nothing.
+	 *
+	 * @since 1.6.0
+	 * @deprecated Simply remove all calls to this method. {@code RestoreSystemProperties}
+	 * restores all properties automatically.
+	 */
+	@Deprecated
 	public void add(String property) {
-		properties.add(property);
-		addValueForProperty(property);
 	}
 
 	@Override
 	protected void before() throws Throwable {
-		for (String property : properties)
-			addValueForProperty(property);
+		originalProperties = getProperties();
+		setProperties(new Properties(originalProperties));
 	}
 
 	@Override
 	protected void after() {
-		Iterator<String> itOriginalValues = originalValues.iterator();
-		for (String property : properties)
-			restore(property, itOriginalValues.next());
-	}
-
-	private void restore(String property, String originalValue) {
-		if (originalValue == null)
-			clearProperty(property);
-		else
-			setProperty(property, originalValue);
-	}
-
-	private void addValueForProperty(String property) {
-		originalValues.add(getProperty(property));
+		setProperties(originalProperties);
 	}
 }
